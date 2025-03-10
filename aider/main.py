@@ -37,6 +37,8 @@ from aider.watch import FileWatcher
 
 from .dump import dump  # noqa: F401
 
+print("LOADING MODIFIED VERSION OF AIDER FOR DREAMLAB")
+
 
 def check_config_files_for_yes(config_files):
     found = False
@@ -221,6 +223,7 @@ def write_streamlit_credentials():
         print("Streamlit credentials already exist.")
 
 
+print("RUNNING PATCHED AIDER FOR DREAMLAB USE")
 def launch_gui(args):
     from streamlit.web import cli
 
@@ -236,11 +239,19 @@ def launch_gui(args):
 
     st_args = ["run", target]
 
+    baseUrlPath = os.environ["BASE_URL_PATH"]
+    port = os.environ["CODER_PORT"]
+
     st_args += [
         "--browser.gatherUsageStats=false",
         "--runner.magicEnabled=false",
         "--server.runOnSave=false",
+        "--server.port=" + port,
+        "--server.baseUrlPath=" + f"coder/{port}/{baseUrlPath}",
+        "--server.enableCORS=false",
+        "--server.enableXsrfProtection=false",
     ]
+    print(st_args)
 
     # https://github.com/Aider-AI/aider/issues/2193
     is_dev = "-dev" in str(__version__)
@@ -609,7 +620,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
         os.environ["OPENAI_ORGANIZATION"] = args.openai_organization_id
 
     analytics = Analytics(logfile=args.analytics_log, permanently_disable=args.analytics_disable)
-    if args.analytics is not False:
+    if False:
         if analytics.need_to_ask(args.analytics):
             io.tool_output(
                 "Aider respects your privacy and never collects your code, chat messages, keys or"
