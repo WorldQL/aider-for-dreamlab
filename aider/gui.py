@@ -119,6 +119,9 @@ class GUI:
             if commit_hash == self.coder.last_aider_commit_hash:
                 show_undo = True
 
+        # Dreamlab: Always disable undo/redo
+        show_undo = False
+
         if fnames:
             fnames = [f"`{fname}`" for fname in fnames]
             fnames = ", ".join(fnames)
