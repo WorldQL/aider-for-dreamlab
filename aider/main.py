@@ -214,6 +214,8 @@ def check_streamlit_install(io):
     )
 
 
+
+
 def write_streamlit_credentials():
     from streamlit.file_util import get_streamlit_file_path
 
@@ -658,6 +660,19 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
         analytics.event("gui session")
         launch_gui(argv)
         analytics.event("exit", reason="GUI session ended")
+        return
+        
+    if args.headless and not return_coder:
+        analytics.event("headless session")
+        coder = main(argv, input, output, force_git_root, return_coder=True)
+        
+        try:
+            from aider.headless import launch_headless
+            launch_headless(coder)
+            analytics.event("exit", reason="Headless session ended")
+        except Exception as e:
+            io.tool_error(f"Error running headless mode: {e}")
+            analytics.event("exit", reason="Headless error")
         return
 
     if args.verbose:

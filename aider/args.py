@@ -611,6 +611,12 @@ def get_parser(default_config_files, git_root):
         default=False,
     )
     group.add_argument(
+        "--headless",
+        action=argparse.BooleanOptionalAction,
+        help="Run aider with HTTP API endpoint (default: False)",
+        default=False,
+    )
+    group.add_argument(
         "--copy-paste",
         action=argparse.BooleanOptionalAction,
         default=False,
