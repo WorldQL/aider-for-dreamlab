@@ -128,8 +128,15 @@ def setup_git(git_root, io):
     if not repo:
         return
 
-    user_name = repo.git.config("--default", "", "--get", "user.name") or None
-    user_email = repo.git.config("--default", "", "--get", "user.email") or None
+    try:
+        user_name = repo.git.config("--get", "user.name") or None
+    except git.exc.GitCommandError:
+        user_name = None
+
+    try:
+        user_email = repo.git.config("--get", "user.email") or None
+    except git.exc.GitCommandError:
+        user_email = None
 
     if user_name and user_email:
         return repo.working_tree_dir
@@ -718,11 +725,6 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
     if args.check_update:
         check_version(io, verbose=args.verbose)
 
-    if args.list_models:
-        models.print_matching_models(io, args.list_models)
-        analytics.event("exit", reason="Listed models")
-        return 0
-
     if args.git:
         git_root = setup_git(git_root, io)
         if args.gitignore:
@@ -741,6 +743,11 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
 
     register_models(git_root, args.model_settings_file, io, verbose=args.verbose)
     register_litellm_models(git_root, args.model_metadata_file, io, verbose=args.verbose)
+
+    if args.list_models:
+        models.print_matching_models(io, args.list_models)
+        analytics.event("exit", reason="Listed models")
+        return 0
 
     # Process any command line aliases
     if args.alias:
@@ -782,6 +789,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
         weak_model=args.weak_model,
         editor_model=args.editor_model,
         editor_edit_format=args.editor_edit_format,
+        verbose=args.verbose,
     )
 
     # Check if deprecated remove_reasoning is set
@@ -790,13 +798,40 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
             "Model setting 'remove_reasoning' is deprecated, please use 'reasoning_tag' instead."
         )
 
-    # Set reasoning effort if specified
+    # Set reasoning effort and thinking tokens if specified
     if args.reasoning_effort is not None:
-        main_model.set_reasoning_effort(args.reasoning_effort)
+        # Apply if check is disabled or model explicitly supports it
+        if not args.check_model_accepts_settings or (
+            main_model.accepts_settings and "reasoning_effort" in main_model.accepts_settings
+        ):
+            main_model.set_reasoning_effort(args.reasoning_effort)
 
-    # Set thinking tokens if specified
     if args.thinking_tokens is not None:
-        main_model.set_thinking_tokens(args.thinking_tokens)
+        # Apply if check is disabled or model explicitly supports it
+        if not args.check_model_accepts_settings or (
+            main_model.accepts_settings and "thinking_tokens" in main_model.accepts_settings
+        ):
+            main_model.set_thinking_tokens(args.thinking_tokens)
+
+    # Show warnings about unsupported settings that are being ignored
+    if args.check_model_accepts_settings:
+        settings_to_check = [
+            {"arg": args.reasoning_effort, "name": "reasoning_effort"},
+            {"arg": args.thinking_tokens, "name": "thinking_tokens"},
+        ]
+
+        for setting in settings_to_check:
+            if setting["arg"] is not None and (
+                not main_model.accepts_settings
+                or setting["name"] not in main_model.accepts_settings
+            ):
+                io.tool_warning(
+                    f"Warning: {main_model.name} does not support '{setting['name']}', ignoring."
+                )
+                io.tool_output(
+                    f"Use --no-check-model-accepts-settings to force the '{setting['name']}'"
+                    " setting."
+                )
 
     if args.copy_paste and args.edit_format is None:
         if main_model.edit_format in ("diff", "whole"):
@@ -845,6 +880,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
                 attribute_commit_message_committer=args.attribute_commit_message_committer,
                 commit_prompt=args.commit_prompt,
                 subtree_only=args.subtree_only,
+                git_commit_verify=args.git_commit_verify,
             )
         except FileNotFoundError:
             pass
@@ -870,6 +906,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
         parser=parser,
         verbose=args.verbose,
         editor=args.editor,
+        original_read_only_fnames=read_only_fnames,
     )
 
     summarizer = ChatSummary(
@@ -924,6 +961,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
             chat_language=args.chat_language,
             detect_urls=args.detect_urls,
             auto_copy_context=args.copy_paste,
+            auto_accept_architect=args.auto_accept_architect,
         )
     except UnknownEditFormat as err:
         io.tool_error(str(err))
@@ -1081,6 +1119,10 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
             return
         except SwitchCoder as switch:
             coder.ok_to_warm_cache = False
+
+            # Set the placeholder if provided
+            if hasattr(switch, "placeholder") and switch.placeholder is not None:
+                io.placeholder = switch.placeholder
 
             kwargs = dict(io=io, from_coder=coder)
             kwargs.update(switch.kwargs)

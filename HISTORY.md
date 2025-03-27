@@ -1,5 +1,64 @@
 # Release history
 
+### Aider v0.79.0
+
+- Added support for Gemini 2.5 Pro models.
+- Added support for DeepSeek V3 0324 model.
+- Added a new `/context` command that automatically identifies which files need to be edited for a given request.
+- Added `/edit` as an alias for the `/editor` command.
+- Added "overeager" mode for Claude 3.7 Sonnet models to try and keep it working within the requested scope.
+- Aider wrote 65% of the code in this release.
+
+### Aider v0.78.0
+
+- Added support for thinking tokens for OpenRouter Sonnet 3.7.
+- Added commands to switch between model types: `/editor-model` for Editor Model, and `/weak-model` for Weak Model, by csala.
+- Added model setting validation to ignore `--reasoning-effort` and `--thinking-tokens` if the model doesn't support them.
+- Added `--check-model-accepts-settings` flag (default: true) to force unsupported model settings.
+- Annotated which models support reasoning_effort and thinking_tokens settings in the model settings data.
+- Improved code block rendering in markdown output with better padding using NoInsetMarkdown.
+- Added `--git-commit-verify` flag (default: False) to control whether git commit hooks are bypassed.
+- Fixed autocompletion for `/ask`, `/code`, and `/architect` commands, by shladnik.
+- Added vi-like behavior when pressing enter in multiline-mode while in vi normal/navigation-mode, by Marco Mayer.
+- Added AWS_PROFILE support for Bedrock models, allowing use of AWS profiles instead of explicit credentials, by lentil32.
+- Enhanced `--aiderignore` argument to resolve both absolute and relative paths, by mopemope.
+- Improved platform information handling to gracefully handle retrieval errors.
+- Aider wrote 92% of the code in this release.
+
+### Aider v0.77.1
+
+- Bumped dependencies to pickup litellm fix for Ollama.
+- Added support for `openrouter/google/gemma-3-27b-it` model.
+- Updated exclude patterns for help documentation.
+
+### Aider v0.77.0
+
+- Big upgrade in [programming languages supported](https://aider.chat/docs/languages.html) by adopting [tree-sitter-language-pack](https://github.com/Goldziher/tree-sitter-language-pack/).
+  - 130 new languages with linter support.
+  - 20 new languages with repo-map support.
+- Added `/think-tokens` command to set thinking token budget with support for human-readable formats (8k, 10.5k, 0.5M).
+- Added `/reasoning-effort` command to control model reasoning level.
+- The `/think-tokens` and `/reasoning-effort` commands display current settings when called without arguments.
+- Display of thinking token budget and reasoning effort in model information.
+- Changed `--thinking-tokens` argument to accept string values with human-readable formats.
+- Added `--auto-accept-architect` flag (default: true) to automatically accept changes from architect coder format without confirmation.
+- Added support for `cohere_chat/command-a-03-2025` and `gemini/gemma-3-27b-it`
+- The bare `/drop` command now preserves original read-only files provided via args.read.
+- Fixed a bug where default model would be set by deprecated `--shortcut` switches even when already specified in the command line.
+- Improved AutoCompleter to require 3 characters for autocompletion to reduce noise.
+- Aider wrote 72% of the code in this release.
+
+### Aider v0.76.2
+
+- Fixed handling of JSONDecodeError when loading model cache file.
+- Fixed handling of GitCommandError when retrieving git user configuration.
+- Aider wrote 75% of the code in this release.
+
+### Aider v0.76.1
+
+- Added ignore_permission_denied option to file watcher to prevent errors when accessing restricted files, by Yutaka Matsubara.
+- Aider wrote 0% of the code in this release.
+
 ### Aider v0.76.0
 
 - Improved support for thinking/reasoningmodels:
